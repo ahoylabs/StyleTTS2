@@ -74,7 +74,11 @@ global_phonemizer = phonemizer.backend.EspeakBackend(language='en-us', preserve_
 
 
 # config = yaml.safe_load(open("Models/LibriTTS/config.yml"))
-config = yaml.safe_load(open(str(cached_path("hf://yl4579/StyleTTS2-LibriTTS/Models/LibriTTS/config.yml"))))
+STOCK_CONFIG = "hf://yl4579/StyleTTS2-LibriTTS/Models/LibriTTS/config.yml"
+config_file_path = os.getenv("STYLETTS2_CONFIG_FILE", STOCK_CONFIG)
+
+config = yaml.safe_load(open(str(cached_path(config_file_path))))
+print ('StyleTTS2 config file loaded from: ' + config_file_path)
 
 # load pretrained ASR model
 ASR_config = config.get('ASR_config', False)
@@ -96,8 +100,11 @@ _ = [model[key].eval() for key in model]
 _ = [model[key].to(device) for key in model]
 
 # params_whole = torch.load("Models/LibriTTS/epochs_2nd_00020.pth", map_location='cpu')
-params_whole = torch.load(str(cached_path("hf://yl4579/StyleTTS2-LibriTTS/Models/LibriTTS/epochs_2nd_00020.pth")), map_location='cpu')
+STOCK_WEIGHTS = "hf://yl4579/StyleTTS2-LibriTTS/Models/LibriTTS/epochs_2nd_00020.pth"
+weight_file_path = os.getenv("STYLETTS2_WEIGHTS_FILE", STOCK_WEIGHTS)
+params_whole = torch.load(str(cached_path(weight_file_path)), map_location='cpu')
 params = params_whole['net']
+print ('StyleTTS2 weights loaded from: ' + weight_file_path)
 
 for key in model:
     if key in params:

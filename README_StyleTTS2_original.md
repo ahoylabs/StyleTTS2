@@ -1,19 +1,3 @@
-# StyleTTS 2 with API
-
-API brought to you by [Backyard.ai](https://backyard.ai/).
-
-This work builds upon the original [StyleTTS 2](https://github.com/yl4579/StyleTTS2) model, and the initial api code from [NeuralVox](https://github.com/NeuralVox/StyleTTS2).
-
-API Documentation at [API_DOCS.md](API_DOCS.md)
-
-More notes to come
-- voices
-- docker
-- werkzeug
-- customizable finetunes
-
-Below is the original StyleTTS 2 README, also included [here](README_StyleTTS2_original.md).
-
 # StyleTTS 2: Towards Human-Level Text-to-Speech through Style Diffusion and Adversarial Training with Large Speech Language Models
 
 ### Yinghao Aaron Li, Cong Han, Vinay S. Raghavan, Gavin Mischler, Nima Mesgarani
