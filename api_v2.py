@@ -268,6 +268,14 @@ def serve_inference():
 
         inference_duration = time.time() - start_inference_time
 
+    # Check if audios is empty
+    if not audios:
+        error_response = {
+            'text': inputs['text'],
+            'error': 'Inference failed to generate any audio.'
+        }
+        return jsonify(error_response), 400
+
     start_response_time = time.time()
     response = generate_response(audios, format=inputs['format'], bitrate=inputs['bitrate'])
     response_duration = time.time() - start_response_time
