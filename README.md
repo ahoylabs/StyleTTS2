@@ -6,6 +6,15 @@ This work builds upon the original [StyleTTS 2](https://github.com/yl4579/StyleT
 
 API Documentation at [API_DOCS.md](API_DOCS.md)
 
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r freeze.txt
+ADDITIONAL_VOICE_DIR=/directory/with/additional_voices
+STYLETTS2_CONFIG_FILE=hf://path/to/finetune/config
+STYLETTS2_WEIGHTS_FILE=/local/path/also/should/work
+```
+
 More notes to come
 - voices
 - docker
