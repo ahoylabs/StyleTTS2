@@ -19,6 +19,9 @@ import nltk
 from scipy import signal  # Import signal for resampling
 from pydub import AudioSegment  # Import pydub for audio conversion
 from gevent.lock import Semaphore
+import subprocess
+import threading
+import uuid
 
 # Constants
 URL_PREFIX = "/styletts2"
@@ -44,7 +47,7 @@ logging.info("Computing stock 8 voices")
 for v in voicelist:
     voices[v] = msinference.compute_style(f'voices/{v}.wav')
 
-def scan_additional_voice_dir():
+def scan_additional_voice_dir_impl():
     if ADDITIONAL_VOICE_DIR:
         logging.info(f"Scanning for additional voices from: {ADDITIONAL_VOICE_DIR}")
         new_voices_count = 0
@@ -66,6 +69,13 @@ def scan_additional_voice_dir():
             logging.error(f"An error occurred while loading additional voices: {e}")
     else:
         logging.info("No additional voice directory set.")
+
+# Lock to ensure thread-safe access to voicelist and voices
+voice_scan_lock = threading.Lock()
+
+def scan_additional_voice_dir():
+    with voice_scan_lock:
+        scan_additional_voice_dir_impl()
 
 
 # Call the function initially to load the voices
@@ -131,7 +141,8 @@ def models():
     }
     return jsonify(response)
 
-def generate_response(audios, format, bitrate=DEFAULT_BITRATE):
+# Helper function for generating the response
+def generate_response_impl(audios, format, bitrate=DEFAULT_BITRATE):
     if format == 'wav-full':
         concatenated_audio = np.concatenate(audios)
         # Model generates float32
@@ -154,47 +165,45 @@ def generate_response(audios, format, bitrate=DEFAULT_BITRATE):
         response.headers["Content-Type"] = "audio/wav"
         return response
 
-    # bitrate paramter only applies to mp3
-    elif format == 'mp3':
-        logging.info("Converting to mp3 with bitrate: " + bitrate)
+    elif format in ['mp3', 'opus']:
+        logging.info(f"Converting to {format} with bitrate: {bitrate}")
         concatenated_audio = np.concatenate(audios)
-        temp_wav_path = 'temp_audio.wav'
+        temp_wav_path = f'temp_audio_{uuid.uuid4()}.wav'
         wavfile.write(temp_wav_path, 24000, concatenated_audio)
         output_buffer = io.BytesIO()
-        temp_mp3_path = 'temp_audio.mp3'
-        subprocess.run([
-            'ffmpeg', '-y', '-i', temp_wav_path,
-            '-b:a', bitrate,  # Set bitrate to 192k
-            temp_mp3_path
-        ], check=True)
-        with open(temp_mp3_path, 'rb') as f:
-            output_buffer.write(f.read())
-        response = Response(output_buffer.getvalue())
-        response.headers["Content-Type"] = "audio/mpeg"
-        return response
 
-    elif format == 'opus':
-        concatenated_audio = np.concatenate(audios)
-        temp_wav_path = 'temp_audio.wav'
-        wavfile.write(temp_wav_path, 24000, concatenated_audio)
-        output_buffer = io.BytesIO()
-        temp_opus_path = 'temp_audio.opus'
-        subprocess.run([
-            'ffmpeg', '-y', '-i', temp_wav_path,
-            '-c:a', 'libopus',
-            '-b:a', bitrate,
-            temp_opus_path
-        ], check=True)
-        with open(temp_opus_path, 'rb') as f:
+        if format == 'mp3':
+            temp_output_path = f'temp_audio_{uuid.uuid4()}.mp3'
+            ffmpeg_args = ['ffmpeg', '-y', '-i', temp_wav_path, '-b:a', bitrate, temp_output_path]
+        else:
+            temp_output_path = f'temp_audio_{uuid.uuid4()}.opus'
+            ffmpeg_args = ['ffmpeg', '-y', '-i', temp_wav_path, '-c:a', 'libopus', '-b:a', bitrate, temp_output_path]
+
+        # Use Popen for non-blocking transcoding, allowing another inference request to begin
+        process = subprocess.Popen(ffmpeg_args)
+        process.wait()
+
+        with open(temp_output_path, 'rb') as f:
             output_buffer.write(f.read())
+        os.remove(temp_wav_path)
+        os.remove(temp_output_path)
+
         response = Response(output_buffer.getvalue())
-        response.headers["Content-Type"] = "audio/ogg"
+        response.headers["Content-Type"] = "audio/mpeg" if format == 'mp3' else "audio/ogg"
         return response
 
     else:
         # default to wav if format is not recognized
         # this avoids infinite loop if DEFAULT_FORMAT is misconfigured
-        return generate_response(audios, format='wav')
+        return generate_response_impl(audios, format='wav')
+
+# Lock to control access to generate_response_impl
+# inference is 1/5th the speed of transcoding so single threaded is fine
+# this probably isn't needed, now that we have unique temp file names
+generate_response_lock = threading.Lock()
+def generate_response(audios, format, bitrate=DEFAULT_BITRATE):
+    with generate_response_lock:
+        return generate_response_impl(audios, format, bitrate)
 
 def validate_input(form):
     if 'text' not in form or 'voice' not in form:
@@ -253,6 +262,7 @@ def serve_inference():
     embedding_scale = inputs['embedding_scale']
 
     with inference_lock:
+        logging.info("inference processing started")
         start_inference_time = time.time()
         for t in texts:
             if inputs['ref_text']:
@@ -286,4 +296,6 @@ def serve_inference():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run("0.0.0.0", port=port, debug=False)
+    # enable threading so that transcoding and inference can run in parallel
+    # transcoding is 5x faster than inference so we only gain about 20% but still a benefit
+    app.run("0.0.0.0", port=port, debug=False, threaded=True)
