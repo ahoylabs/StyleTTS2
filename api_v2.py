@@ -220,6 +220,7 @@ def validate_input(form):
     # advanced parameters
     alpha = float(form.get('alpha', 0.3))
     beta = float(form.get('beta', 0.7))
+    speed = float(form.get('speed', 1.0))
     embedding_scale = form.get('embedding_scale', 1)  # Default to 1, no type conversion
 
     if voice not in voices:
@@ -238,6 +239,7 @@ def validate_input(form):
         'ref_text': ref_text,
         'alpha': alpha,
         'beta': beta,
+        'speed': speed,
         'embedding_scale': embedding_scale
     }
     return inputs
@@ -259,6 +261,7 @@ def serve_inference():
 
     alpha = inputs['alpha']
     beta = inputs['beta']
+    speed = inputs['speed']
     embedding_scale = inputs['embedding_scale']
 
     with inference_lock:
@@ -268,12 +271,12 @@ def serve_inference():
             if inputs['ref_text']:
                 audios.append(msinference.STinference(
                     t, v, inputs['ref_text'],
-                    alpha=alpha, beta=beta, diffusion_steps=7, embedding_scale=embedding_scale
+                    alpha=alpha, beta=beta, speed=speed, diffusion_steps=7, embedding_scale=embedding_scale
                 ))
             else:
                 audios.append(msinference.inference(
                     t, v,
-                    alpha=alpha, beta=beta, diffusion_steps=7, embedding_scale=embedding_scale
+                    alpha=alpha, beta=beta, speed=speed, diffusion_steps=7, embedding_scale=embedding_scale
                 ))
 
         inference_duration = time.time() - start_inference_time

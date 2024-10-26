@@ -133,7 +133,7 @@ sampler = DiffusionSampler(
     clamp=False
 )
 
-def inference(text, ref_s, alpha = 0.3, beta = 0.7, diffusion_steps=5, embedding_scale=1, use_gruut=False):
+def inference(text, ref_s, alpha = 0.3, beta = 0.7, diffusion_steps=5, embedding_scale=1, speed=1):
     text = text.strip()
     ps = global_phonemizer.phonemize([text])
     ps = word_tokenize(ps[0])
@@ -170,6 +170,7 @@ def inference(text, ref_s, alpha = 0.3, beta = 0.7, diffusion_steps=5, embedding
         duration = model.predictor.duration_proj(x)
 
         duration = torch.sigmoid(duration).sum(axis=-1)
+        duration = duration * 1 / speed
         pred_dur = torch.round(duration.squeeze()).clamp(min=1)
 
 
@@ -202,7 +203,7 @@ def inference(text, ref_s, alpha = 0.3, beta = 0.7, diffusion_steps=5, embedding
 
     return out.squeeze().cpu().numpy()[..., :-50] # weird pulse at the end of the model, need to be fixed later
 
-def LFinference(text, s_prev, ref_s, alpha = 0.3, beta = 0.7, t = 0.7, diffusion_steps=5, embedding_scale=1, use_gruut=False):
+def LFinference(text, s_prev, ref_s, alpha = 0.3, beta = 0.7, t = 0.7, diffusion_steps=5, embedding_scale=1, speed=1):
     text = text.strip()
     ps = global_phonemizer.phonemize([text])
     ps = word_tokenize(ps[0])
@@ -247,6 +248,7 @@ def LFinference(text, s_prev, ref_s, alpha = 0.3, beta = 0.7, t = 0.7, diffusion
         duration = model.predictor.duration_proj(x)
 
         duration = torch.sigmoid(duration).sum(axis=-1)
+        duration = duration * 1 / speed
         pred_dur = torch.round(duration.squeeze()).clamp(min=1)
 
 
@@ -279,7 +281,7 @@ def LFinference(text, s_prev, ref_s, alpha = 0.3, beta = 0.7, t = 0.7, diffusion
 
     return out.squeeze().cpu().numpy()[..., :-100], s_pred # weird pulse at the end of the model, need to be fixed later
 
-def STinference(text, ref_s, ref_text, alpha = 0.3, beta = 0.7, diffusion_steps=5, embedding_scale=1, use_gruut=False):
+def STinference(text, ref_s, ref_text, alpha = 0.3, beta = 0.7, diffusion_steps=5, embedding_scale=1, speed=1):
     text = text.strip()
     ps = global_phonemizer.phonemize([text])
     ps = word_tokenize(ps[0])
@@ -330,6 +332,7 @@ def STinference(text, ref_s, ref_text, alpha = 0.3, beta = 0.7, diffusion_steps=
         duration = model.predictor.duration_proj(x)
 
         duration = torch.sigmoid(duration).sum(axis=-1)
+        duration = duration * 1 / speed
         pred_dur = torch.round(duration.squeeze()).clamp(min=1)
 
 

@@ -41,6 +41,7 @@ The `/v2/inference` endpoint generates audio based on the provided text and voic
 | bitrate         | string  | No       | Audio bitrate for `mp3` or `opus` format. Defaults to `64k`.                |
 | alpha           | float   | No       | Controls the degree of variability in the audio generation. Default: `0.3`. |
 | beta            | float   | No       | Controls the stylistic emphasis. Default: `0.7`.                            |
+| speed           | float   | No       | Allows speed adjustment (higher is faster). Default: `1.0`, recommended range: `0.9-1.25`  More extreme adjustments may affect quality. |
 | embedding_scale | float   | No       | Adjusts the voice embedding. Default: `1`. **Currently recommended to keep at `1` due to issues.** |
 
 Supported formats are:
