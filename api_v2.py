@@ -249,6 +249,7 @@ def serve_inference():
     inputs = validate_input(request.form)
     if inputs is None:
         error_response = {
+            'form': request.form.to_dict(),
             'inputs': inputs,
             'error': 'Missing or invalid fields. Please include "text" and "voice" in your request, and ensure the voice selected is valid.'
         }
@@ -286,6 +287,7 @@ def serve_inference():
     # Check if audios is empty
     if not audios:
         error_response = {
+            'form': request.form.to_dict(),
             'inputs': inputs,
             'error': 'Inference failed to generate any audio.'
         }
