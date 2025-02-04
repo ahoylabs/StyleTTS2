@@ -35,6 +35,8 @@ RUN wget https://ffmpeg.org/releases/ffmpeg-4.4.2.tar.gz && \
 
 # this is the final stage
 FROM ${CUDA_BASE_CONTAINER} AS runtime
+# copy early so that any code changes do not invalidate the cache
+COPY --from=ffmpeg /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -56,7 +58,6 @@ RUN /usr/local/sbin/apt_install_clean.sh gcc python3-pip && \
     /usr/local/sbin/apt_remove_clean.sh gcc python3-pip
 
 RUN mkdir -p additional_voices
-COPY --from=ffmpeg /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 CMD ["/usr/bin/python3", "api_v2.py"]
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000 || exit 1
