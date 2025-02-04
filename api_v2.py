@@ -251,6 +251,7 @@ def serve_inference():
         error_response = {
             'error': 'Missing or invalid fields. Please include "text" and "voice" in your request, and ensure the voice selected is valid.'
         }
+        logging.error(error_response)
         return jsonify(error_response), 400
 
     logging.info(f"Inputs received: {inputs}\n")
@@ -287,6 +288,7 @@ def serve_inference():
             'text': inputs['text'],
             'error': 'Inference failed to generate any audio.'
         }
+        logging.error(error_response)
         return jsonify(error_response), 400
 
     start_response_time = time.time()
