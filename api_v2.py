@@ -284,15 +284,11 @@ def serve_inference():
 
         inference_duration = time.time() - start_inference_time
 
-    # Check if audios is empty
+    # Check if audios is empty, replace with silent audio if so
     if not audios:
-        error_response = {
-            'form': request.form.to_dict(),
-            'inputs': inputs,
-            'error': 'Inference failed to generate any audio.'
-        }
-        logging.error(error_response)
-        return jsonify(error_response), 400
+        logging.warning("Inference returned no audio. Generating .1s of silent audio.")
+        silent_audio = np.zeros(int(0.1 * 24000), dtype=np.float32)  # 0.1s silence, similar to time between words in casual speech
+        audios = [silent_audio]
 
     start_response_time = time.time()
     response = generate_response(audios, format=inputs['format'], bitrate=inputs['bitrate'])
